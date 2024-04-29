@@ -118,6 +118,16 @@ func (rb *Builder) HeaderAdd(key string, value string) *Builder {
 	return rb
 }
 
+func (rb *Builder) HeaderUpdate(header http.Header) *Builder {
+	if rb.header == nil {
+		rb.header = make(http.Header)
+	}
+	for k, v := range header {
+		rb.header[k] = v
+	}
+	return rb
+}
+
 func (rb *Builder) BuildURL() (u *url.URL) {
 	u = new(url.URL)
 	u.Scheme = rb.scheme
