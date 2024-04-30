@@ -7,17 +7,17 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 type Builder struct {
-	method string
-	scheme string
-	host   string
-	path   string
-	query  string
-	header http.Header
-	body   io.Reader
+	method     string
+	scheme     string
+	host       string
+	path       string
+	query      string
+	header     http.Header
+	body       []byte
+	bodyReader io.Reader
 }
 
 func (rb *Builder) Url(us string) *Builder {
@@ -53,7 +53,7 @@ func (rb *Builder) Host(host string) *Builder {
 }
 
 func (rb *Builder) Body(body []byte) *Builder {
-	rb.body = bytes.NewReader(body)
+	rb.body = body
 	return rb
 }
 
@@ -62,7 +62,7 @@ func (rb *Builder) BodyForm(object any) *Builder {
 	if err != nil {
 		panic(err)
 	}
-	rb.body = strings.NewReader(body)
+	rb.body = []byte(body)
 	return rb
 }
 
@@ -71,12 +71,12 @@ func (rb *Builder) BodyJson(object any) *Builder {
 	if err != nil {
 		panic(err)
 	}
-	rb.body = bytes.NewReader(body)
+	rb.body = body
 	return rb
 }
 
 func (rb *Builder) BodyReader(reader io.Reader) *Builder {
-	rb.body = reader
+	rb.bodyReader = reader
 	return rb
 }
 
@@ -142,7 +142,11 @@ func (rb *Builder) Build() *Request {
 }
 
 func (rb *Builder) BuildWithContext(ctx context.Context) *Request {
-	req, err := http.NewRequestWithContext(ctx, rb.method, rb.BuildURL().String(), rb.body)
+	body := rb.bodyReader
+	if rb.body != nil {
+		body = bytes.NewReader(rb.body)
+	}
+	req, err := http.NewRequestWithContext(ctx, rb.method, rb.BuildURL().String(), body)
 	if err != nil {
 		panic(err)
 	}
