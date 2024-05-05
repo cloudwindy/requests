@@ -47,7 +47,7 @@ func (req *Request) WantBody() (body []byte, err error) {
 		return
 	}
 	if resp.ContentLength == 0 {
-		err = errors.New("empty response body")
+		err = ErrEmptyBody
 	}
 	return
 }
@@ -72,3 +72,5 @@ type Status struct {
 func (e *Status) Error() string {
 	return fmt.Sprintf("unexpected response status: %s", e.Message)
 }
+
+var ErrEmptyBody = errors.New("empty body")
