@@ -6,18 +6,36 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Request struct {
-	R    *http.Request
-	sent bool
+	R      *http.Request
+	client *http.Client
+	sent   bool
+}
+
+func (req *Request) WithProxy(us string) *Request {
+	proxy, err := url.Parse(us)
+	if err != nil {
+		panic(err)
+	}
+	req.client = &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxy),
+		},
+	}
+	return req
 }
 
 func (req *Request) Send() (resp *http.Response, err error) {
 	if req.sent {
 		return nil, errors.New("already sent")
 	}
-	resp, err = http.DefaultClient.Do(req.R)
+	if req.client == nil {
+		req.client = http.DefaultClient
+	}
+	resp, err = req.client.Do(req.R)
 	req.sent = true
 	return
 }
