@@ -1,30 +1,45 @@
 package requests
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Request struct {
-	R      *http.Request
-	client *http.Client
-	sent   bool
+	R         *http.Request
+	transport http.RoundTripper
+	sent      bool
 }
 
-func (req *Request) WithProxy(us string) *Request {
+func (req *Request) WithContext(ctx context.Context) *Request {
+	req.R = req.R.WithContext(ctx)
+	return req
+}
+
+func (req *Request) WithTransport(transport http.RoundTripper) *Request {
+	req.transport = transport
+	return req
+}
+
+func (req *Request) WithProxyTransport(us string) *Request {
 	proxy, err := url.Parse(us)
 	if err != nil {
 		panic(err)
 	}
-	req.client = &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxy),
-		},
+	req.transport = &http.Transport{
+		Proxy: http.ProxyURL(proxy),
 	}
+	return req
+}
+
+func (req *Request) WithHost(host string) *Request {
+	req.R.Host = host
 	return req
 }
 
@@ -32,10 +47,17 @@ func (req *Request) Send() (resp *http.Response, err error) {
 	if req.sent {
 		return nil, errors.New("already sent")
 	}
-	if req.client == nil {
-		req.client = http.DefaultClient
+	if req.transport == nil {
+		req.transport = http.DefaultTransport
 	}
-	resp, err = req.client.Do(req.R)
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout:   120 * time.Second,
+		Transport: req.transport,
+	}
+	resp, err = client.Do(req.R)
 	req.sent = true
 	return
 }

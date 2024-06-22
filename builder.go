@@ -2,7 +2,6 @@ package requests
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -138,15 +137,11 @@ func (rb *Builder) BuildURL() (u *url.URL) {
 }
 
 func (rb *Builder) Build() *Request {
-	return rb.BuildWithContext(context.Background())
-}
-
-func (rb *Builder) BuildWithContext(ctx context.Context) *Request {
 	body := rb.bodyReader
 	if rb.body != nil {
 		body = bytes.NewReader(rb.body)
 	}
-	req, err := http.NewRequestWithContext(ctx, rb.method, rb.BuildURL().String(), body)
+	req, err := http.NewRequest(rb.method, rb.BuildURL().String(), body)
 	if err != nil {
 		panic(err)
 	}
