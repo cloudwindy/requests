@@ -1,4 +1,4 @@
-package conn
+package requests
 
 import (
 	"context"
@@ -22,13 +22,13 @@ type conn struct {
 	transport http.RoundTripper
 }
 
-type Config struct {
+type ConnConfig struct {
 	Proxy     string
 	DisableH2 bool
 	EnableH3  bool
 }
 
-func New(config ...Config) Conn {
+func NewConn(config ...ConnConfig) Conn {
 	if len(config) == 0 {
 		return newH2Conn()
 	}
