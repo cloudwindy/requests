@@ -8,8 +8,18 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
+
+var clientPool = &sync.Pool{New: func() interface{} {
+	return &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: 120 * time.Second,
+	}
+}}
 
 type Request struct {
 	R         *http.Request
@@ -50,13 +60,8 @@ func (req *Request) Send() (resp *http.Response, err error) {
 	if req.transport == nil {
 		req.transport = http.DefaultTransport
 	}
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Timeout:   120 * time.Second,
-		Transport: req.transport,
-	}
+	client := clientPool.Get().(*http.Client)
+	client.Transport = req.transport
 	resp, err = client.Do(req.R)
 	req.sent = true
 	return
