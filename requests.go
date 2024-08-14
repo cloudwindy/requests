@@ -60,7 +60,10 @@ func (req *Request) Send() (resp *http.Response, err error) {
 	if req.transport == nil {
 		req.transport = http.DefaultTransport
 	}
+
 	client := clientPool.Get().(*http.Client)
+	defer clientPool.Put(client)
+
 	client.Transport = req.transport
 	resp, err = client.Do(req.R)
 	req.sent = true
