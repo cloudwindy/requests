@@ -3,7 +3,6 @@ package requests
 import (
 	"context"
 	"crypto/tls"
-	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/http2"
@@ -11,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 type Conn interface {
@@ -96,10 +94,6 @@ func newH2Conn() Conn {
 		MaxDecoderHeaderTableSize:  0x00001000,
 		MaxEncoderHeaderTableSize:  0x00001000,
 		StrictMaxConcurrentStreams: true,
-		IdleConnTimeout:            0,
-		ReadIdleTimeout:            1 * time.Second,
-		PingTimeout:                1 * time.Second,
-		WriteByteTimeout:           1 * time.Second,
 	}
 
 	return &conn{
@@ -108,14 +102,8 @@ func newH2Conn() Conn {
 }
 
 func newH3Conn() Conn {
-	transport := &http3.RoundTripper{
-		QUICConfig: &quic.Config{
-			HandshakeIdleTimeout: 1 * time.Second,
-			MaxIdleTimeout:       1 * time.Second,
-		},
-	}
 	return &conn{
-		transport: transport,
+		transport: &http3.RoundTripper{},
 	}
 }
 
